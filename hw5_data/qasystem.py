@@ -42,11 +42,13 @@ def passage_retrieval(entry):
     for r in root:
         print(r.find('DOCNO').text.strip())
         paragraph = r.find('TEXT').text
+        # sometimes, the text is nested within <P> and </P> within <TEXT> and </TEXT>
+        if paragraph == '\n': paragraph = ''.join([p.text for p in r.find('TEXT')])
         tengrams = ngrams(preprocess(paragraph), 10)
         for t in tengrams: 
             print(cos_similarity(list(t), entry.query))
-        if i == 3: sys.exit()
-        i += 1
+        sys.exit()
+#        i += 1
         
 train_qPATH = 'qadata/train/questions.txt'
 train_dPATH = 'qadata/train/relevant_docs.txt'
