@@ -29,7 +29,7 @@ def qa_processing(PATH):
 
 # calculates cosine similarity of two lists - can change similarity measurement later
 def cos_similarity(a,b):
-    wordbag = set(a+b)
+    wordbag = set(a + b)
     vector_a = [int(w in a) for w in wordbag]
     vector_b = [int(w in b) for w in wordbag]
     return 1 - spatial.distance.cosine(vector_a, vector_b)
@@ -38,18 +38,27 @@ def passage_retrieval(entry):
     with open('topdocs/train/top_docs.' + entry.qid, 'r') as f: xml = f.read()
     xml = '<ROOT>' + xml + '</ROOT>'
     root = ElementTree.fromstring(xml)
-    i = 0
+    max_sim = 0
+    target = ''
     for r in root:
         print(r.find('DOCNO').text.strip())
         paragraph = r.find('TEXT').text
+        # sometimes, the text is nested within <P> and </P> within <TEXT> and </TEXT>
         if paragraph == '\n': paragraph = ''.join([p.text for p in r.find('TEXT')])
         tengrams = ngrams(preprocess(paragraph), 10)
-        for t in tengrams: 
-            print(cos_similarity(list(t), entry.query))
-        sys.exit()
-#        i += 1
+        for t in tengrams:
+            sim = cos_similarity(list(t), entry.query)
+            if sim > max_sim:
+#                print(sim)
+#                print(t)
+                max_sim = sim
+                target = t
+    print(max_sim)
+    print(target)
         
 train_qPATH = 'qadata/train/questions.txt'
 train_dPATH = 'qadata/train/relevant_docs.txt'
 temp = qa_processing(train_qPATH)
 passage_retrieval(temp[0])
+print(temp[0].question)
+print(temp[0].query)
