@@ -52,5 +52,6 @@ def passage_retrieval(entry):
         
 train_qPATH = 'qadata/train/questions.txt'
 train_dPATH = 'qadata/train/relevant_docs.txt'
-temp = qa_processing(train_qPATH)
-passage_retrieval(temp[0])
+print(qa_processing(train_qPATH)[3])
+#passage_retrieval(temp[3])
+
