@@ -4,7 +4,6 @@ from nltk import ngrams, pos_tag
 from collections import namedtuple, Counter
 from scipy import spatial
 from lxml import etree
-import sys
 from itertools import izip_longest
 from nltk.tag import StanfordNERTagger
 
@@ -64,13 +63,13 @@ def passage_retrieval(entry):
             if r.find('text').find('p') is not None: paragraph = ''.join([p.text for p in r.find('text')])
             else: paragraph = r.find('text').text
         # Will use 'passage' named tuple to carry NE and POS 
-        paragraph = preprocess(paragraph)
+        paragraph = preprocess(str(paragraph))
         top.update(similarity(paragraph, entry.query, 10))
     top = sorted(top.items(), key = lambda x:-x[1])[:10]
     return top
 
 def answer_processing(top, entry): 
-    print(top)
+#    print(top)
     if entry.type == 'How':
         return top 
     if entry.type in ['Who', 'Where', 'When']:  
@@ -89,6 +88,10 @@ train_qPATH = 'qadata/train/questions.txt'
 train_dPATH = 'qadata/train/relevant_docs.txt'
 
 temp = qa_processing(train_qPATH)
-top = passage_retrieval(temp[21])
-answer_processing(top, temp[21])
-print(temp[21].question)
+for t in temp:
+    top = passage_retrieval(t)
+    print(answer_processing(top, t))
+    print(t.question)
+#top = passage_retrieval(temp[14])
+#print(answer_processing(top, temp[14]))
+#print(temp[14].question)
