@@ -3,7 +3,7 @@ from nltk.tokenize import word_tokenize, RegexpTokenizer
 from nltk import ngrams, pos_tag
 from collections import namedtuple, Counter
 from scipy import spatial
-import xml.etree.ElementTree as ElementTree
+from lxml import etree
 import sys
 from itertools import izip_longest
 from nltk.tag import StanfordNERTagger
@@ -54,18 +54,15 @@ def similarity(passage, query, n):
     return cos_sim
 
 def passage_retrieval(entry):
-    with open('topdocs/train/top_docs.' + entry.qid, 'r') as f: xml = f.read()
-    #parser = ElementTree.XMLParser(encoding="utf-8")
-    xml = '<ROOT>' + xml + '</ROOT>'
-    root = ElementTree.fromstring(xml)
+    tree = etree.parse('topdocs/train/top_docs.' + entry.qid, parser=etree.HTMLParser(remove_comments=True))
+    root = tree.getroot()
     top = {}
     target = ''
-    for r in root:
-        r.find('DOCNO').text.strip()
-        paragraph = r.find('TEXT').text
-        # sometimes, the text is nested within <P> and </P> within <TEXT> and </TEXT>
-        if paragraph == '\n': 
-            paragraph = ''.join([p.text for p in r.find('TEXT')])
+    for r in root[0][0]:
+        if r.find('text') is not None:
+            # sometimes, the text is nested within <P> and </P> within <TEXT> and </TEXT>
+            if r.find('text').find('p') is not None: paragraph = ''.join([p.text for p in r.find('text')])
+            else: paragraph = r.find('text').text
         # Will use 'passage' named tuple to carry NE and POS 
         paragraph = preprocess(paragraph)
         top.update(similarity(paragraph, entry.query, 10))
