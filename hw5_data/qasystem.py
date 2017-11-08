@@ -64,8 +64,8 @@ def passage_retrieval(entry):
             else: paragraph = r.find('text').text
         # Will use 'passage' named tuple to carry NE and POS 
         paragraph = preprocess(str(paragraph))
-        top.update(similarity(paragraph, entry.query, 20))
-    top = sorted(top.items(), key = lambda x:-x[1])[:10]
+        top.update(similarity(paragraph, entry.query, 15))
+    top = sorted(top.items(), key = lambda x:-x[1])[:20]
     return top
 
 def answer_processing(top, entry): 
@@ -90,8 +90,8 @@ train_dPATH = 'qadata/train/relevant_docs.txt'
 temp = qa_processing(train_qPATH)
 for t in temp:
     top = passage_retrieval(t)
+    print(t.query)    
     print(answer_processing(top, t))
-    print(t.query)
 #top = passage_retrieval(temp[14])
 #print(answer_processing(top, temp[14]))
 #print(temp[14].question)
