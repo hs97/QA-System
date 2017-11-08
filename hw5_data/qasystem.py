@@ -69,7 +69,7 @@ def passage_retrieval(entry):
     return top
 
 def answer_processing(top, entry): 
-    print(top)
+#    print(top)
     if entry.type == 'How':
         return top 
     if entry.type in ['Who', 'Where', 'When']:  
@@ -90,8 +90,11 @@ train_dPATH = 'qadata/train/relevant_docs.txt'
 temp = qa_processing(train_qPATH)
 for t in temp:
     top = passage_retrieval(t)
-    print(t.query)    
-    print(answer_processing(top, t))
+    print("qid " + t.qid)
+    answer = answer_processing(top, t)
+    for a in answer: print(' '.join(a))
+#    print(t.query)
+>>>>>>> 75f6c3e17483d17602aece1b7f33fd3e4eabb499
 #top = passage_retrieval(temp[14])
 #print(answer_processing(top, temp[14]))
 #print(temp[14].question)
