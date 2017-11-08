@@ -26,8 +26,8 @@ def qa_processing(PATH):
     questions = []
     with open(PATH) as f:
         for line1,line2,line3 in izip_longest(*[f]*3):
-            question = line2[:-1]
-            query = preprocess(question)
+            question = line2
+            query = preprocess(question)[1:]
             if line2.split()[0:1] != 'How many':
                 type = line2.split()[0]
             else:
@@ -64,12 +64,12 @@ def passage_retrieval(entry):
             else: paragraph = r.find('text').text
         # Will use 'passage' named tuple to carry NE and POS 
         paragraph = preprocess(str(paragraph))
-        top.update(similarity(paragraph, entry.query, 10))
+        top.update(similarity(paragraph, entry.query, 20))
     top = sorted(top.items(), key = lambda x:-x[1])[:10]
     return top
 
 def answer_processing(top, entry): 
-#    print(top)
+    print(top)
     if entry.type == 'How':
         return top 
     if entry.type in ['Who', 'Where', 'When']:  
@@ -91,7 +91,7 @@ temp = qa_processing(train_qPATH)
 for t in temp:
     top = passage_retrieval(t)
     print(answer_processing(top, t))
-    print(t.question)
+    print(t.query)
 #top = passage_retrieval(temp[14])
 #print(answer_processing(top, temp[14]))
 #print(temp[14].question)
