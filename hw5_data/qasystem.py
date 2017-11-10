@@ -1,5 +1,5 @@
 from nltk.corpus import stopwords
-from nltk.tokenize import word_tokenize, RegexpTokenizer
+from nltk.tokenize import word_tokenize, RegexpTokenizer, sent_tokenize
 from nltk import ngrams, pos_tag
 from collections import namedtuple, Counter
 from scipy import spatial
@@ -9,7 +9,7 @@ from nltk.tag import StanfordNERTagger
 
 
 QA = namedtuple('QA', ['question', 'query', 'type', 'qid'])
-QC = {'Who':['PERSON','ORGANIZATION'], 'Where':['LOCATION'], 'What':['NN', 'NNP'], 'When':['DATE', 'TIME'], 'How many':['CD'], 'Name':['NN', 'NNP']}
+QC = {'Who':['PERSON','ORGANIZATION'], 'Where':['LOCATION'], 'What':['NN', 'NNP'], 'When':['DATE', 'TIME'], 'How many':['CD'], 'Name':['NNP']}
 st = StanfordNERTagger('english.muc.7class.distsim.crf.ser.gz',
 		        'stanford-ner.jar',
 			encoding='utf-8')
@@ -48,7 +48,7 @@ def cos_similarity(ngrams, query):
         return 1 - spatial.distance.cosine(vector_a, vector_b)
 
 def similarity(passage, query, n):
-    cos_sim = {ngram:cos_similarity(list(ngram), query) for ngram in ngrams(passage, n)}
+    cos_sim = {ngram:cos_similarity(list(ngram), query) for sent in passage for ngram in ngrams(sent, n)}
     ## Will take NE and POS into accounting for similarity
     return cos_sim
 
@@ -63,17 +63,25 @@ def passage_retrieval(entry):
             if r.find('text').find('p') is not None: paragraph = ''.join([p.text for p in r.find('text')])
             else: paragraph = r.find('text').text
         # Will use 'passage' named tuple to carry NE and POS 
-        paragraph = preprocess(str(paragraph))
+        paragraph = sent_tokenize(str(paragraph))
+        paragraph = [preprocess(sent) for sent in paragraph]
         top.update(similarity(paragraph, entry.query, 15))
-    top = sorted(top.items(), key = lambda x:-x[1])[:20]
+    top = sorted(top.items(), key = lambda x:-x[1])[:10]
     return top
 
 def answer_processing(top, entry): 
 #    print(top)
     if entry.type == 'How':
-        return top 
+        return [tup[0] for tup in top] 
     if entry.type in ['Who', 'Where', 'When']:  
         classified_text = [st.tag(ngram[0]) for ngram in top]
+        #for ngram in classified_top:
+            # classified text
+        #    ct = st.tag(ngram[0])
+        #    prev_string = ''
+        #    top_ten = []
+        #    for i in 0:len(ct):
+
         classified_text = [[str(tag[0]) for tag in ngram if str(tag[1]) in QC[entry.type] if str(tag[0]) not in entry.query] for ngram in classified_text]
         return classified_text
     
@@ -92,9 +100,9 @@ for t in temp:
     top = passage_retrieval(t)
     print("qid " + t.qid)
     answer = answer_processing(top, t)
-    for a in answer: print(' '.join(a))
+#    print(answer)
+    for a in answer: print(' '.join(list(a)))
 #    print(t.query)
->>>>>>> 75f6c3e17483d17602aece1b7f33fd3e4eabb499
 #top = passage_retrieval(temp[14])
 #print(answer_processing(top, temp[14]))
 #print(temp[14].question)

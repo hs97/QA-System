@@ -1,5 +1,5 @@
 from nltk.corpus import stopwords
-from nltk.tokenize import word_tokenize, RegexpTokenizer
+from nltk.tokenize import word_tokenize, RegexpTokenizer, sent_tokenize
 from nltk import ngrams, pos_tag
 from collections import namedtuple, Counter
 from scipy import spatial
@@ -48,7 +48,7 @@ def cos_similarity(ngrams, query):
         return 1 - spatial.distance.cosine(vector_a, vector_b)
 
 def similarity(passage, query, n):
-    cos_sim = {ngram:cos_similarity(list(ngram), query) for ngram in ngrams(passage, n)}
+    cos_sim = {ngram:cos_similarity(list(ngram), query) for sent in passage for ngram in ngrams(sent, n)}
     ## Will take NE and POS into accounting for similarity
     return cos_sim
 
@@ -63,15 +63,16 @@ def passage_retrieval(entry):
             if r.find('text').find('p') is not None: paragraph = ''.join([p.text for p in r.find('text')])
             else: paragraph = r.find('text').text
         # Will use 'passage' named tuple to carry NE and POS 
-        paragraph = preprocess(str(paragraph))
-        top.update(similarity(paragraph, entry.query, 20))
+        paragraph = sent_tokenize(str(paragraph))
+        paragraph = [preprocess(sent) for sent in paragraph]
+        top.update(similarity(paragraph, entry.query, 15))
     top = sorted(top.items(), key = lambda x:-x[1])[:10]
     return top
 
 def answer_processing(top, entry): 
 #    print(top)
     if entry.type == 'How':
-        return top 
+        return [tup[0] for tup in top] 
     if entry.type in ['Who', 'Where', 'When']:  
         classified_text = [st.tag(ngram[0]) for ngram in top]
         classified_text = [[str(tag[0]) for tag in ngram if str(tag[1]) in QC[entry.type] if str(tag[0]) not in entry.query] for ngram in classified_text]
@@ -88,11 +89,12 @@ train_qPATH = 'qadata/train/questions.txt'
 train_dPATH = 'qadata/train/relevant_docs.txt'
 
 temp = qa_processing(train_qPATH)
-for t in temp:
+for t in temp[13:17]:
     top = passage_retrieval(t)
     print("qid " + t.qid)
     answer = answer_processing(top, t)
-    for a in answer
+#    print(answer)
+    for a in answer: print(' '.join(list(a)))
 #    print(t.query)
 #top = passage_retrieval(temp[14])
 #print(answer_processing(top, temp[14]))
