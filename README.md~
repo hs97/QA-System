@@ -1,0 +1,6 @@
+# QA-System
+
+To run the QA System, cd into hw5_data
+The main file is contained in qasystem.py
+
+Currently, the code is set to run the test questions. To switch to the training questions, replace 
