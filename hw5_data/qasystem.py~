@@ -9,7 +9,7 @@ from nltk.tag import StanfordNERTagger
 
 
 QA = namedtuple('QA', ['question', 'query', 'type', 'qid'])
-QC = {'Who':['PERSON','ORGANIZATION'], 'Where':['LOCATION'], 'What':['NN', 'NNP'], 'When':['DATE', 'TIME'], 'How many':['CD'], 'Name':['NN', 'NNP']}
+QC = {'Who':['PERSON','ORGANIZATION'], 'Where':['LOCATION'], 'What':['NN', 'NNP'], 'When':['DATE', 'TIME'], 'How many':['CD'], 'Name':['NNP']}
 st = StanfordNERTagger('english.muc.7class.distsim.crf.ser.gz',
 		        'stanford-ner.jar',
 			encoding='utf-8')
@@ -66,36 +66,63 @@ def passage_retrieval(entry):
         paragraph = sent_tokenize(str(paragraph))
         paragraph = [preprocess(sent) for sent in paragraph]
         top.update(similarity(paragraph, entry.query, 15))
-    top = sorted(top.items(), key = lambda x:-x[1])[:10]
+    top = sorted(top.items(), key = lambda x:-x[1])[:20]
     return top
 
 def answer_processing(top, entry): 
 #    print(top)
     if entry.type == 'How':
-        return [tup[0] for tup in top] 
+        return [' '.join(tup[0]) for tup in top] 
     if entry.type in ['Who', 'Where', 'When']:  
-        classified_text = [st.tag(ngram[0]) for ngram in top]
-        classified_text = [[str(tag[0]) for tag in ngram if str(tag[1]) in QC[entry.type] if str(tag[0]) not in entry.query] for ngram in classified_text]
-        return classified_text
-    
+        top_ten = []
+        for ngram in top:
+            #classified text
+            ct = st.tag(ngram[0])
+            prev_string = ''
+            for i in range(len(ct) - 1):
+                if ct[i][1] in QC[entry.type] and len(top_ten) < 10:
+                    if prev_string == '':
+                        if str(ct[i][0]) not in top_ten:
+                            top_ten = top_ten + [str(ct[i][0])]
+                        prev_string = str(ct[i][0])
+                    else:
+                        if [prev_string + ' ' + str(ct[i][0])] not in top_ten:                        
+                            top_ten = top_ten + [prev_string + ' ' + str(ct[i][0])]
+                            top_ten.remove(prev_string)
+                        prev_string = prev_string + ' ' + str(ct[i][0])
+                        if ct[i + 1][1] not in QC[entry.type]:
+                            prev_string = ''
+                top_ten = list(set(top_ten))
+        return top_ten
     else: 
-        tagged_text = [pos_tag(ngram[0]) for ngram in top]
-        tagged_text = [[tag[0] for tag in ngram if tag[1] in QC[entry.type] if tag[0] not in entry.query] for ngram in tagged_text]
-        return tagged_text
-        
+        top_ten = []
+        for ngram in top:
+            #classified text
+            ct = pos_tag(ngram[0])
+            prev_string = ''
+            for i in range(len(ct) - 1):
+                if ct[i][1] in QC[entry.type] and len(top_ten) < 10 and ct[i][0] not in entry.query:
+                    if prev_string == '':
+                        if ct[i][0] not in top_ten:
+                            top_ten = top_ten + [ct[i][0]]
+                        prev_string = ct[i][0]
+                    else:
+                        if (prev_string + ' ' + ct[i][0]) not in top_ten:
+                            top_ten = top_ten + [prev_string + ' ' + ct[i][0]]
+                            top_ten.remove(prev_string)
+                        prev_string = prev_string + ' ' + ct[i][0]
+                        if ct[i + 1][1] not in QC[entry.type]:
+                            prev_string = ''
+        return top_ten 
          
         
 train_qPATH = 'qadata/train/questions.txt'
 train_dPATH = 'qadata/train/relevant_docs.txt'
 
 temp = qa_processing(train_qPATH)
-for t in temp[13:17]:
+for t in temp:
     top = passage_retrieval(t)
     print("qid " + t.qid)
     answer = answer_processing(top, t)
-#    print(answer)
-    for a in answer: print(' '.join(list(a)))
-#    print(t.query)
-#top = passage_retrieval(temp[14])
-#print(answer_processing(top, temp[14]))
-#print(temp[14].question)
+    for a in answer: print(a)
+

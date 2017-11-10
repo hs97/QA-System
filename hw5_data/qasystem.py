@@ -53,7 +53,7 @@ def similarity(passage, query, n):
     return cos_sim
 
 def passage_retrieval(entry):
-    tree = etree.parse('topdocs/train/top_docs.' + entry.qid, parser=etree.HTMLParser(remove_comments=True))
+    tree = etree.parse('topdocs/test/top_docs.' + entry.qid, parser=etree.HTMLParser(remove_comments=True))
     root = tree.getroot()
     top = {}
     target = ''
@@ -116,8 +116,7 @@ def answer_processing(top, entry):
         return top_ten 
          
         
-train_qPATH = 'qadata/train/questions.txt'
-train_dPATH = 'qadata/train/relevant_docs.txt'
+train_qPATH = 'qadata/test/questions.txt'
 
 temp = qa_processing(train_qPATH)
 for t in temp:
